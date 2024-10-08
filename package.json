@@ -1,0 +1,30 @@
+{
+  "name": "ecommerce_simplificado",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrunoPdOliveir4/ecommerce_simplificado.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BrunoPdOliveir4/ecommerce_simplificado/issues"
+  },
+  "homepage": "https://github.com/BrunoPdOliveir4/ecommerce_simplificado#readme",
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "pg": "^8.13.0",
+    "prisma": "^5.20.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
+}

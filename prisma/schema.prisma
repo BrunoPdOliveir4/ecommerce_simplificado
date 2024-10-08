@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Database Models
+
+model Role{
+  id String @id @default(uuid())
+  name String @unique
+  users User[]
+  @@map("tb_roles")
+}
+
+model User{
+  id String @id @default(uuid())
+  fullName String @map("full_name")
+  cpf String @unique
+  email String @unique
+  password String 
+  salt String
+  role Role @relation(fields: [idRole], references: [id])
+  idRole String @map("id_role")
+  sells Sell[] 
+  @@map("tb_users")
+}
+
+model Sell {
+  id String @id @default(uuid())
+  user User @relation(fields: [idUser], references: [id])
+  idUser String @map("id_user")
+  productSell ProductSell[]
+  totalSpent Float @map("total_spent")
+  discount Float?
+  sellDate DateTime 
+  @@map("tb_sells")
+}
+
+model Product{
+  id String @id @default(uuid())
+  name String
+  description String
+  price Float
+  quantity Int
+  creationDate DateTime @map("creation_date")
+  productSell ProductSell[]
+  @@map("tb_products")
+}
+
+model ProductSell{
+  id String @id @default(uuid())
+  idSell String @map("id_sell")
+  sell Sell @relation(fields: [idSell], references: [id])
+  idProduct String @map("id_product")
+  product Product @relation(fields: [idProduct], references: [id])
+  quantity Int
+  @@map("tb_products_sells")
+}
