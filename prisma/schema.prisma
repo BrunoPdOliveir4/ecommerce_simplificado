@@ -22,8 +22,8 @@ model Role{
   @@map("tb_roles")
 }
 
-model User{
-  id String @id @default(uuid())
+model User{ // fullName, cpf, email, password, salt, 
+  id String @id @default(uuid()) 
   fullName String @map("full_name")
   cpf String @unique
   email String @unique
