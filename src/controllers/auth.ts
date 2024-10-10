@@ -1,12 +1,14 @@
-import {Request, Response} from 'express';
+import {NextFunction, Request, Response} from 'express';
 import { hashSync, compareSync } from 'bcrypt';
 import { prismaClient } from '../server';
 import { userLoginValidation, userSignValidation } from '../models/validations';
 import * as jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../credentials';
+import { BadRequests } from '../exceptions/bad-requests';
+import { ErrorCode } from '../exceptions/root';
 
 
-export const signup = async (req:Request, res:Response) => {
+export const signup = async (req:Request, res:Response, next: NextFunction) => {
     const {fullName, cpf, email, password} = req.body;
 
     // Validação via regex do email e do cpf
@@ -16,7 +18,8 @@ export const signup = async (req:Request, res:Response) => {
         // Validação de email já registrado
         let user = await prismaClient.user.findFirst({where: {email}})
         if(user) {
-            throw Error ('User already exists!')
+            next(new BadRequests("User Already Exists!", ErrorCode.USER_ALREADY_EXISTS))
+            return;
         }
         
         //Criação de um salt para casos de senha repetida não constarem o mesmo hash no banco
@@ -24,7 +27,10 @@ export const signup = async (req:Request, res:Response) => {
 
         //Atribuição da role de cliente automática, pode haver mudança para criação de administrador no futuro
         const role = await prismaClient.role.findFirst({where: {name: "client"}})
-        if(role == null) throw Error("Role not exists");
+        if(role == null){
+            next(new BadRequests("Role Not Found!", ErrorCode.USER_NOT_FOUND));
+            return;
+        }
     
         user = await prismaClient.user.create({
             data: {
@@ -40,7 +46,7 @@ export const signup = async (req:Request, res:Response) => {
     } 
 }
 
-export const login = async (req:Request, res:Response) => {
+export const login = async (req:Request, res:Response, next: NextFunction) => {
     const {email, password} = req.body;
 
     // Validação via regex do email
@@ -49,18 +55,30 @@ export const login = async (req:Request, res:Response) => {
         // Validação de usuário existente
         let user = await prismaClient.user.findFirst({where: {email}})
         if(!user) {
-            throw Error ('User do not exists!')
+            next(new BadRequests("User Not Found!", ErrorCode.USER_NOT_FOUND))
+            return;
+        }else if(!compareSync((password+user.salt), user.password)){
+            next(new BadRequests("Invalid Credentials!", ErrorCode.INCORRECT_PASSWORD))
+            return;
         }
-        if(!compareSync((password+user.salt), user.password)){
-            throw Error('Incorrect password sent!');
-        }
+
+
+        //Pode e até deve ser implementado um USER DTO só com name, id e email (talvez cpf).        
         const token = jwt.sign({
-            userId: user.id
+            userId: user.id,
+            role: user.idRole
         }, JWT_SECRET)
         
-
-        res.json({user, token});
+        res.status(200).json({user, token});
     } 
     res.statusMessage = "Email incorrect or inexistent";
     res.status(400).send()
+}
+
+export const amIUser = async (req:Request, res:Response, next: NextFunction) => {
+    res.status(200).send()
+}
+
+export const amIAdmin = async (req:Request, res:Response, next: NextFunction) => {
+    res.status(200).send()
 }

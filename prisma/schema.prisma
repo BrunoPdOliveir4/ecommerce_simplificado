@@ -31,6 +31,8 @@ model User{ // fullName, cpf, email, password, salt,
   salt String
   role Role @relation(fields: [idRole], references: [id])
   idRole String @map("id_role")
+  creationDate DateTime @default(now()) @map("creation_date")
+  updateDate DateTime @updatedAt @map("update_at")
   sells Sell[] 
   @@map("tb_users")
 }
@@ -39,11 +41,11 @@ model Sell {
   id String @id @default(uuid())
   user User @relation(fields: [idUser], references: [id])
   idUser String @map("id_user")
-  productSell ProductSell[]
   totalSpent Float @map("total_spent")
-  discount Float?
-  sellDate DateTime 
+  wasCompleted Boolean @map("was_completed")
+  creationDate DateTime @default(now()) @map("creation_date")
   @@map("tb_sells")
+  productSell ProductSell[]
 }
 
 model Product{
@@ -52,7 +54,8 @@ model Product{
   description String
   price Float
   quantity Int
-  creationDate DateTime @map("creation_date")
+  creationDate DateTime @default(now()) @map("creation_date")
+  updateDate DateTime @updatedAt @map("update_at")
   productSell ProductSell[]
   @@map("tb_products")
 }
