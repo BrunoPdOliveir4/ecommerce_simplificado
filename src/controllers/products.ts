@@ -9,12 +9,14 @@ export const createProduct = async (req:Request, res:Response, next: NextFunctio
     
     const {name, description, price, quantity} = req.body;
     if(price <= 0 || quantity <= 0){
-        return next(new BadRequests("Price and quantity must be greater than 0!", ErrorCode.PRODUCT_ALREADY_EXISTS));
+        next(new BadRequests("Price and quantity must be greater than 0!", ErrorCode.PRODUCT_ALREADY_EXISTS));
+        return;
     }
     // Validação de email já registrado
     let product = await prismaClient.product.findFirst({where: {name}})
     if(product) {
-        return next(new BadRequests("Product Already Exists!", ErrorCode.PRODUCT_ALREADY_EXISTS));
+        next(new BadRequests("Product Already Exists!", ErrorCode.PRODUCT_ALREADY_EXISTS));
+        return;
         
     }
 
@@ -43,12 +45,14 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
         // Verifica se o produto existe
         const existingProduct = await prismaClient.product.findUnique({ where: { id } });
         if (!existingProduct) {
-            return next(new BadRequests("Product not found!", ErrorCode.PRODUCT_NOT_FOUND));
+            next(new BadRequests("Product not found!", ErrorCode.PRODUCT_NOT_FOUND));
+            return;
         }
 
         // Validação do preço
         if (price <= 0 || quantity <= 0) {
-            return next(new BadRequests("Price must be greater than 0!", ErrorCode.INVALID_PRICE));
+            next(new BadRequests("Price must be greater than 0!", ErrorCode.INVALID_PRICE));
+            return;
         }
 
         // Atualiza o produto no banco de dados
@@ -75,7 +79,8 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
         // Verifica se o produto existe
         const existingProduct = await prismaClient.product.findUnique({ where: { id } });
         if (!existingProduct) {
-            return next(new BadRequests("Product not found!", ErrorCode.PRODUCT_NOT_FOUND));
+            next(new BadRequests("Product not found!", ErrorCode.PRODUCT_NOT_FOUND));
+            return;
         }
 
         // Exclui o produto do banco de dados
@@ -106,13 +111,13 @@ export const buyProduct = async(products:Product_DTO[], sell_id:string , next: N
 
             if (availableQuantity === undefined) {
                 // Produto não encontrado no banco de dados
-                next(new Error(`Produto com ID ${product.id} não encontrado!`));
+                next(new BadRequests("Product not found!", ErrorCode.PRODUCT_NOT_FOUND));
                 return;
             }
 
             if (availableQuantity < product.quantity) {
                 // Se a quantidade no estoque for menor que a quantidade solicitada
-                next(new Error(`Estoque insuficiente para o produto ${product.id}. Disponível: ${availableQuantity}, Solicitado: ${product.quantity}`));
+                next(new BadRequests("Not Enough Available Products!", ErrorCode.PRODUCT_NOT_FOUND));
                 return false;
             }
         });

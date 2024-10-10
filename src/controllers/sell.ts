@@ -4,20 +4,22 @@ import { BadRequests } from '../exceptions/bad-requests';
 import { ErrorCode } from '../exceptions/root';
 import { buyProduct } from './products';
 import { Product_DTO } from '../dto/productsDTO';
+import { SellReturnDTO } from '../dto/sellReturnDTO';
 
 
 export const makeASell = async (req:Request, res:Response, next: NextFunction) => {
     const {userId, totalSpent, products} = req.body;
     if(totalSpent <= 0){
-        return next(new BadRequests("Price must be greater than 0!", ErrorCode.PRODUCT_ALREADY_EXISTS));
+        next(new BadRequests("Price must be greater than 0!", ErrorCode.PRODUCT_ALREADY_EXISTS));
+        return;
     }
     let user = await prismaClient.user.findFirst({where: {id: userId}})
     if(!user) {
-        return next(new BadRequests("User dont Found!", ErrorCode.USER_NOT_FOUND));
-        
+        next(new BadRequests("User dont Found!", ErrorCode.USER_NOT_FOUND));
+        return;
     }
 
-    //it will register anyways if you're trying to buy, but it only become true if sell is completed.
+    //Vai registrar de toda forma, porém, se concluir vai mudar o wasCompleted para true.
     let sell = await prismaClient.sell.create({
         data: {
             idUser: userId,
@@ -46,13 +48,49 @@ export const makeASell = async (req:Request, res:Response, next: NextFunction) =
 export const getMySells = async (req:Request, res:Response, next: NextFunction) => {
     const {userId} = req.body;
     let sells = await prismaClient.sell.findMany({where: {idUser: userId}})
-    
-    res.status(200).json(sells);
+
+    const allSells:SellReturnDTO[] = await formatSells(sells);
+
+    res.status(200).json(allSells);
 }
 
 //Retorna todas compras feitas(ADMIN)
 export const getSells = async (req:Request, res:Response, next: NextFunction) => {
     let sells = await prismaClient.sell.findMany({ })
-    
-    res.status(200).json(sells);
+
+    const allSells:SellReturnDTO[] = await formatSells(sells);
+
+    res.status(200).json(allSells);
 }
+
+//Como eu fiz com tabelas intermediárias, eu tive que fazer um join, e ai para formatar foi esta aventura aqui haha
+/**
+ * Está função deve receber as vendas para que retorne na rota o nome do produto e a quantidade.
+ * @param sells Vendas que vão ser procuradas para formatar.
+ * @returns 
+ */
+const formatSells = async (sells: any[]): Promise<SellReturnDTO[]> => {
+    const allSells: SellReturnDTO[] = await Promise.all(
+        sells.map(async sell => {
+            const sellReturn = new SellReturnDTO(sell.id);
+            const products = await prismaClient.productSell.findMany({
+                where: { idSell: sell.id },
+                select: {
+                    quantity: true,
+                    product: {
+                        select: {
+                            name: true,
+                        }
+                    }
+                }
+            });
+            sellReturn.addProduct(products.map(product => ({
+                quantity: product.quantity,
+                product: { name: product.product.name }
+            })));
+            return sellReturn; 
+        })
+    );
+
+    return allSells;
+};
