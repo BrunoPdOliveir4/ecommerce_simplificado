@@ -41,11 +41,11 @@ model Sell {
   id String @id @default(uuid())
   user User @relation(fields: [idUser], references: [id])
   idUser String @map("id_user")
-  productSell ProductSell[]
   totalSpent Float @map("total_spent")
-  discount Float?
+  wasCompleted Boolean @map("was_completed")
   creationDate DateTime @default(now()) @map("creation_date")
   @@map("tb_sells")
+  productSell ProductSell[]
 }
 
 model Product{

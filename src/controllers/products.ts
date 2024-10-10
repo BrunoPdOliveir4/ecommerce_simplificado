@@ -2,13 +2,14 @@ import {NextFunction, Request, Response} from 'express';
 import { prismaClient } from '../server';
 import { BadRequests } from '../exceptions/bad-requests';
 import { ErrorCode } from '../exceptions/root';
+import { Product_DTO } from '../dto/productsDTO';
 
 
 export const createProduct = async (req:Request, res:Response, next: NextFunction) => {
     
     const {name, description, price, quantity} = req.body;
-    if(price <= 0){
-        return next(new BadRequests("Product Already Exists!", ErrorCode.PRODUCT_ALREADY_EXISTS));
+    if(price <= 0 || quantity <= 0){
+        return next(new BadRequests("Price and quantity must be greater than 0!", ErrorCode.PRODUCT_ALREADY_EXISTS));
     }
     // Validação de email já registrado
     let product = await prismaClient.product.findFirst({where: {name}})
@@ -46,7 +47,7 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
         }
 
         // Validação do preço
-        if (price <= 0) {
+        if (price <= 0 || quantity <= 0) {
             return next(new BadRequests("Price must be greater than 0!", ErrorCode.INVALID_PRICE));
         }
 
@@ -87,3 +88,58 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
         next(error); // Passa o erro para o middleware de tratamento de erros
     }
 };
+
+export const buyProduct = async(products:Product_DTO[], sell_id:string , next: NextFunction) => {
+    try {
+        const dbProducts = await prismaClient.product.findMany({where: {quantity: {gt: 0}}});
+
+        // Usar hashmap para facilitar o acesso aos produtos.
+        const dbProductMap: Map<string, number> = new Map();
+
+        dbProducts.forEach(product => {
+            dbProductMap.set(product.id, product.quantity); 
+        });
+
+        // Verifica se a quantidade no banco de dados é suficiente
+        products.forEach(product => {
+            const availableQuantity = dbProductMap.get(product.id);
+
+            if (availableQuantity === undefined) {
+                // Produto não encontrado no banco de dados
+                next(new Error(`Produto com ID ${product.id} não encontrado!`));
+                return;
+            }
+
+            if (availableQuantity < product.quantity) {
+                // Se a quantidade no estoque for menor que a quantidade solicitada
+                next(new Error(`Estoque insuficiente para o produto ${product.id}. Disponível: ${availableQuantity}, Solicitado: ${product.quantity}`));
+                return false;
+            }
+        });
+
+        // Se tudo estiver ok, prossiga com o processamento da compra (atualizar estoque, etc.)
+        for (const product of products) {
+            await prismaClient.product.update({
+                where: { id: product.id },
+                data: {
+                    quantity: {
+                        decrement: product.quantity, 
+                    },
+                },
+            });
+
+            await prismaClient.productSell.create({
+                data:
+                {
+                    idSell: sell_id,
+                    idProduct: product.id,
+                    quantity: product.quantity
+                }
+            })
+        }
+
+        return true;
+    } catch (error) {
+        return false; 
+    }
+}
