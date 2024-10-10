@@ -10,7 +10,7 @@ import { ErrorCode } from '../exceptions/root';
 
 export const signup = async (req:Request, res:Response, next: NextFunction) => {
     const {fullName, cpf, email, password} = req.body;
-
+    
     // Validação via regex do email e do cpf
     const valid = userSignValidation(email, cpf);
     
@@ -24,9 +24,10 @@ export const signup = async (req:Request, res:Response, next: NextFunction) => {
         
         //Criação de um salt para casos de senha repetida não constarem o mesmo hash no banco
         const salt = fullName.substring(0,5);
+        let roleName:string = (req.body.secret == undefined) ? "client" : "administrator";
 
         //Atribuição da role de cliente automática, pode haver mudança para criação de administrador no futuro
-        const role = await prismaClient.role.findFirst({where: {name: "client"}})
+        const role = await prismaClient.role.findFirst({where: {name: roleName}})
         if(role == null){
             next(new BadRequests("Role Not Found!", ErrorCode.USER_NOT_FOUND));
             return;
