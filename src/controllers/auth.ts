@@ -65,7 +65,8 @@ export const login = async (req:Request, res:Response, next: NextFunction) => {
 
         //Pode e até deve ser implementado um USER DTO só com name, id e email (talvez cpf).        
         const token = jwt.sign({
-            userId: user.id
+            userId: user.id,
+            role: user.idRole
         }, JWT_SECRET)
         
         res.status(200).json({user, token});
@@ -74,6 +75,10 @@ export const login = async (req:Request, res:Response, next: NextFunction) => {
     res.status(400).send()
 }
 
-export const me = async (req:Request, res:Response, next: NextFunction) => {
+export const amIUser = async (req:Request, res:Response, next: NextFunction) => {
+    res.status(200).send()
+}
+
+export const amIAdmin = async (req:Request, res:Response, next: NextFunction) => {
     res.status(200).send()
 }

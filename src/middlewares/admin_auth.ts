@@ -5,7 +5,7 @@ import { JWT_SECRET } from "../credentials";
 import * as jwt from "jsonwebtoken";
 import { prismaClient } from "../server";
 
-const authMiddleware = async(req: Request,res: Response, next:NextFunction) => {
+const adminAuthMiddleware = async(req: Request,res: Response, next:NextFunction) => {
     const token = req.headers.authorization
     if(!token){
         console.log("OK")
@@ -19,7 +19,11 @@ const authMiddleware = async(req: Request,res: Response, next:NextFunction) => {
             next(new UnauthorizedException('Unauthorized', ErrorCode.UNAUTHORIZED))
             return;
         }
-        req.body.userId = user.id;
+        const role = await prismaClient.role.findFirst({where: {name: "administrator"}})
+        if(payload.role != role?.id || !role){
+            next(new UnauthorizedException('Unauthorized', ErrorCode.UNAUTHORIZED))
+            return;
+        }
         next();
         
     }
@@ -29,4 +33,4 @@ const authMiddleware = async(req: Request,res: Response, next:NextFunction) => {
     }
 }
 
-export default authMiddleware;
+export default adminAuthMiddleware;
