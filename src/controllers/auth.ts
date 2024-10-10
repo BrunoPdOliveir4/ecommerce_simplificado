@@ -19,6 +19,7 @@ export const signup = async (req:Request, res:Response, next: NextFunction) => {
         let user = await prismaClient.user.findFirst({where: {email}})
         if(user) {
             next(new BadRequests("User Already Exists!", ErrorCode.USER_ALREADY_EXISTS))
+            return;
         }
         
         //Criação de um salt para casos de senha repetida não constarem o mesmo hash no banco
@@ -71,4 +72,8 @@ export const login = async (req:Request, res:Response, next: NextFunction) => {
     } 
     res.statusMessage = "Email incorrect or inexistent";
     res.status(400).send()
+}
+
+export const me = async (req:Request, res:Response, next: NextFunction) => {
+    res.status(200).send()
 }

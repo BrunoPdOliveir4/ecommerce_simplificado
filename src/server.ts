@@ -9,10 +9,6 @@ app.use(express.json())
 app.use('/api', rootRouter);
 
 
-app.get('/', (req:Request, res:Response) => {
-    res.send("Working...")
-});
-
 export const prismaClient = new PrismaClient({log:['query']})
 
 app.use(errorMiddleware)
